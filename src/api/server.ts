@@ -5,6 +5,11 @@ import axios from "axios"
 import path from "path"
 import { fileURLToPath } from "url"
 
+type CacheEntry = {
+    total: number
+    calculatedAt: number
+}
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 dotenv.config({ path: path.resolve(__dirname, "..", "..", ".env.local") })
@@ -13,10 +18,9 @@ const app = express()
 const parsedPort = Number(process.env.PORT)
 const PORT = Number.isFinite(parsedPort) ? parsedPort : 3000
 
-const USERNAME = "simplyyliam"
+const DEFAULT_USERNAME = "simplyyliam"
 const ONE_HOUR = 60 * 60 * 1000
-let cachedTotalCommits: number | null = null
-let cachedAt = 0
+const cache = new Map<string, CacheEntry>()
 
 app.use(cors())
 app.use(express.json())
@@ -25,14 +29,25 @@ app.get("/ping", (_req: Request, res: Response) => {
     res.json({ message: "pong" })
 })
 
-app.get("/commits", async (_req, res) => {
+app.get("/commits", async (req, res) => {
     const token = process.env.GITHUB_TOKEN
     if (!token) {
         return res.status(500).json({ error: "Missing GITHUB_TOKEN in .env.local" })
     }
 
-    if (cachedTotalCommits !== null && Date.now() - cachedAt < ONE_HOUR) {
-        return res.json({ totalCommits: cachedTotalCommits, cached: true })
+    const username = typeof req.query.user === "string" && req.query.user.trim().length > 0
+        ? req.query.user.trim()
+        : DEFAULT_USERNAME
+
+    const fresh = req.query.fresh === "1" || req.query.fresh === "true"
+    const cached = cache.get(username)
+    if (!fresh && cached && Date.now() - cached.calculatedAt < ONE_HOUR) {
+        return res.json({
+            totalCommits: cached.total,
+            cached: true,
+            user: username,
+            calculatedAt: new Date(cached.calculatedAt).toISOString()
+        })
     }
 
     const headers = {
@@ -43,19 +58,15 @@ app.get("/commits", async (_req, res) => {
     }
 
     try {
-        // Match the GitHub profile "last year" number via GraphQL contributions
-        const to = new Date()
-        const from = new Date()
-        from.setFullYear(from.getFullYear() - 1)
-
         const query = `
-            query($login: String!, $from: DateTime!, $to: DateTime!) {
+            query($login: String!) {
                 user(login: $login) {
-                    contributionsCollection(from: $from, to: $to) {
+                    contributionsCollection {
                         totalCommitContributions
                         totalPullRequestContributions
                         totalIssueContributions
                         totalPullRequestReviewContributions
+                        restrictedContributionsCount
                     }
                 }
             }
@@ -63,14 +74,7 @@ app.get("/commits", async (_req, res) => {
 
         const gqlRes = await axios.post(
             "https://api.github.com/graphql",
-            {
-                query,
-                variables: {
-                    login: USERNAME,
-                    from: from.toISOString(),
-                    to: to.toISOString()
-                }
-            },
+            { query, variables: { login: username } },
             { headers }
         )
 
@@ -83,19 +87,17 @@ app.get("/commits", async (_req, res) => {
         const prs = Number(collection?.totalPullRequestContributions ?? 0)
         const issues = Number(collection?.totalIssueContributions ?? 0)
         const reviews = Number(collection?.totalPullRequestReviewContributions ?? 0)
-        const totalContributions = commits + prs + issues + reviews
+        const restricted = Number(collection?.restrictedContributionsCount ?? 0)
+        const totalContributions = commits + prs + issues + reviews + restricted
 
-        cachedTotalCommits = totalContributions
-        cachedAt = Date.now()
+        cache.set(username, { total: totalContributions, calculatedAt: Date.now() })
+
         res.json({
             totalCommits: totalContributions,
             cached: false,
-            breakdown: {
-                commits,
-                prs,
-                issues,
-                reviews
-            }
+            user: username,
+            breakdown: { commits, prs, issues, reviews, restricted },
+            calculatedAt: new Date(cache.get(username)!.calculatedAt).toISOString()
         })
     } catch (err) {
         console.error(err)
