@@ -1,0 +1,7 @@
+{
+  "watch": ["src/api"],
+  "ext": "ts,tsx",
+  "exec": "tsx src/api/server.ts",
+  "signal": "SIGTERM",
+  "delay": "200"
+}

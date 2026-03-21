@@ -14,19 +14,23 @@ export default function CommitSphere() {
       const u = Math.random();
       const v = Math.random();
 
+
       const theta = 2 * Math.PI * u; // Theta is looking left and right
       const phi = Math.acos(2 * v - 1); // Phi is looking up and down
 
       const x = radius * Math.sin(phi) * Math.cos(theta);
       const y = radius * Math.sin(phi) * Math.sin(theta);
       const z = radius * Math.cos(phi);
-      console.log(`
-        Theta: ${theta}
-        Phi ${[phi]}
-        XCord: ${x}
-        YCord: ${y}
-        ZCord: ${z}
-        `);
+      // console.log(`
+      //   Theta: ${theta}
+      //   Phi ${[phi]}
+      //   XCord: ${x}
+      //   YCord: ${y}
+      //   ZCord: ${z}
+
+      //   u: ${u}
+      //   v: ${v}
+      //   `);
 
       pts.push(x, y, z);
     }
