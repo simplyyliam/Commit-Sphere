@@ -10,6 +10,22 @@ type CacheEntry = {
     calculatedAt: number
 }
 
+type ContributionDay = {
+    date: string
+    contributionCount: number
+    color: string
+}
+
+type Week = {
+    contributionDays: ContributionDay[]
+}
+
+// type ContributionCalendar = {
+//     totalContributions: number
+//     days: ContributionDay[]
+// }
+
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 dotenv.config({ path: path.resolve(__dirname, "..", "..", ".env.local") })
@@ -59,18 +75,23 @@ app.get("/commits", async (req, res) => {
 
     try {
         const query = `
-            query($login: String!) {
-                user(login: $login) {
-                    contributionsCollection {
-                        totalCommitContributions
-                        totalPullRequestContributions
-                        totalIssueContributions
-                        totalPullRequestReviewContributions
-                        restrictedContributionsCount
-                    }
+        query($login: String!) {
+        user(login: $login) {
+        contributionsCollection {
+            contributionCalendar {
+            totalContributions
+            weeks {
+                contributionDays {
+                date
+                contributionCount
+                color
                 }
             }
-        `
+            }
+        }
+        }
+        }
+`
 
         const gqlRes = await axios.post(
             "https://api.github.com/graphql",
@@ -82,21 +103,29 @@ app.get("/commits", async (req, res) => {
             return res.status(500).json({ error: "GitHub GraphQL error", details: gqlRes.data.errors })
         }
 
-        const collection = gqlRes.data?.data?.user?.contributionsCollection
-        const commits = Number(collection?.totalCommitContributions ?? 0)
-        const prs = Number(collection?.totalPullRequestContributions ?? 0)
-        const issues = Number(collection?.totalIssueContributions ?? 0)
-        const reviews = Number(collection?.totalPullRequestReviewContributions ?? 0)
-        const restricted = Number(collection?.restrictedContributionsCount ?? 0)
-        const totalContributions = commits + prs + issues + reviews + restricted
+        const calendar =
+            gqlRes.data?.data?.user?.contributionsCollection?.contributionCalendar
 
-        cache.set(username, { total: totalContributions, calculatedAt: Date.now() })
+        if (!calendar) {
+            return res.status(500).json({ error: "No calendar data returned" })
+        }
+
+        // Flatten weeks → days
+        const days: ContributionDay[] = calendar.weeks.flatMap((week: Week) => week.contributionDays.map((day) => ({
+            ...day,
+            intensity: day.contributionCount / 10 // Normalize
+        })))
+
+        // Total contributions (already provided, but you can recompute too)
+        const total = calendar.totalContributions
+
+        cache.set(username, { total, calculatedAt: Date.now() })
 
         res.json({
-            totalCommits: totalContributions,
+            totalContributions: total,
+            days,
             cached: false,
             user: username,
-            breakdown: { commits, prs, issues, reviews, restricted },
             calculatedAt: new Date(cache.get(username)!.calculatedAt).toISOString()
         })
     } catch (err) {

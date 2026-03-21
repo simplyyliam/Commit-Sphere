@@ -4,13 +4,13 @@ import axios from "axios";
 import { useCommits } from "./store/useCommits";
 
 export default function App() {
-  const { commits, setCommits } = useCommits()
+  const { commits, setCommits } = useCommits();
   const [error, setError] = useState(false);
   useEffect(() => {
     const fetchCommits = async () => {
       try {
         const res = await axios.get("http://localhost:3000/commits");
-        setCommits(res.data.totalCommits ?? 0);
+        setCommits(res.data.totalContributions ?? 0);
       } catch (error) {
         setError(true);
         console.error("Fronted error fetching commits:", error);
