@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { CanvasLayer } from "./components";
 import axios from "axios";
+import { useCommits } from "./store/useCommits";
 
 export default function App() {
-  const [totalCommits, setTotalCommits] = useState<number | null>(null);
+  const { commits, setCommits } = useCommits()
   const [error, setError] = useState(false);
   useEffect(() => {
     const fetchCommits = async () => {
       try {
         const res = await axios.get("http://localhost:3000/commits");
-        setTotalCommits(res.data.totalCommits ?? 0);
+        setCommits(res.data.totalCommits ?? 0);
       } catch (error) {
         setError(true);
         console.error("Fronted error fetching commits:", error);
@@ -27,8 +28,8 @@ export default function App() {
         <span className="text-white text-2xl font-mono">
           {error
             ? "Error loading stats"
-            : totalCommits !== null
-              ? totalCommits.toLocaleString()
+            : commits !== null
+              ? commits.toLocaleString()
               : "Counting commits..."}
         </span>
       </div>

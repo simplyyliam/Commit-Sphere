@@ -1,19 +1,20 @@
 import { useFrame } from "@react-three/fiber";
 import { useRef, useState } from "react";
 import * as THREE from "three";
+import { useCommits } from "../../store/useCommits";
 
 export default function CommitSphere() {
+  const { commits } = useCommits();
   const pointsRef = useRef<THREE.Mesh>(null!);
 
   const [points] = useState(() => {
     const pts = [];
-    const count = 2000;
+    const count = commits;
     const radius = 5;
 
     for (let i = 0; i < count; i++) {
       const u = Math.random();
       const v = Math.random();
-
 
       const theta = 2 * Math.PI * u; // Theta is looking left and right
       const phi = Math.acos(2 * v - 1); // Phi is looking up and down
