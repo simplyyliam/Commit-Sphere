@@ -29,7 +29,15 @@ type Week = {
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-dotenv.config({ path: path.resolve(__dirname, "..", "..", ".env.local") })
+
+const envPaths = [
+    path.resolve(__dirname, ".env"),
+    path.resolve(__dirname, "..", "..", ".env.local"),
+]
+
+envPaths.forEach((envPath) => {
+    dotenv.config({ path: envPath, override: false })
+})
 
 const app = express()
 const parsedPort = Number(process.env.PORT)
