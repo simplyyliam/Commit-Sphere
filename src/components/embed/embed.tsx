@@ -1,21 +1,30 @@
+import { useEffect } from "react";
+import axios from "axios";
+import CanvasLayer from "../canvas/canvasLayer";
+import { useCommits } from "@/store/useCommits";
 
 export default function EmbedApp() {
+  const { setCommits } = useCommits();
+  const username = new URLSearchParams(window.location.search).get("user") || "simplyyliam";
 
+  useEffect(() => {
+    setCommits(0); 
 
-  // useEffect(() => {
-  //   const username =
-  //     new URLSearchParams(window.location.search).get("user") || "simplyyliam";
-
-  //   axios
-  //     .get(`${import.meta.env.VITE_BACKEND_API_BASE}/embed/${username}`)
-  //     .then((res) => {
-  //       console.log("SERVER DATA:", res.data);
-  //       setCommits(res.data.totalCommits ?? res.data.totalContributions ?? 0);
-  //     })
-  //     .catch((err) => console.error(err));
-  // }, [setCommits]);
+    const apiBase = import.meta.env.VITE_BACKEND_API_BASE || import.meta.env.VITE_API_BASE;
+    
+    axios
+      .get(`${apiBase}/embed/${username}`)
+      .then((res) => {
+        console.log("API Success:", res.data);
+        const count = res.data.totalContributions ?? res.data.totalCommits ?? res.data.total ?? 0;
+        setCommits(count);
+      })
+      .catch((err) => console.error("API Error:", err));
+  }, [username, setCommits]);
 
   return (
-    <div style={{height: "100%", width: "100%" }}>Hello world</div>
+    <div style={{ width: "100vw", height: "100vh", background: "black", overflow: "hidden" }}>
+      <CanvasLayer />
+    </div>
   );
 }
