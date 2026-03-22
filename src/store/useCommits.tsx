@@ -3,12 +3,12 @@ import { create } from "zustand";
 
 type Commits = {
     // States
-    commits: number
+    commits: number | null
     // Actions
     setCommits: (value: number) => void
 }
 
 export const useCommits = create<Commits>()((set) => ({
-    commits: 0,
+    commits: null,
     setCommits: (value) => set({commits: value})
 }))

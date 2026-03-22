@@ -14,6 +14,7 @@ type ContributionDay = {
     date: string
     contributionCount: number
     color: string
+    intensity?: number
 }
 
 type Week = {
@@ -34,7 +35,7 @@ const app = express()
 const parsedPort = Number(process.env.PORT)
 const PORT = Number.isFinite(parsedPort) ? parsedPort : 3000
 
-const DEFAULT_USERNAME = "simplyyliam"
+// const DEFAULT_USERNAME = "simplyyliam"
 const ONE_HOUR = 60 * 60 * 1000
 const cache = new Map<string, CacheEntry>()
 
@@ -46,14 +47,16 @@ app.get("/ping", (_req: Request, res: Response) => {
 })
 
 app.get("/commits", async (req, res) => {
-    const token = process.env.GITHUB_TOKEN
+    const token = req.headers.authorization?.replace("Bearer ", "")
     if (!token) {
-        return res.status(500).json({ error: "Missing GITHUB_TOKEN in .env.local" })
+        return res.status(401).json({ error: "Missing user token" })
     }
 
-    const username = typeof req.query.user === "string" && req.query.user.trim().length > 0
-        ? req.query.user.trim()
-        : DEFAULT_USERNAME
+    const userRes = await axios.get("https://api.github.com/user", {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const username = userRes.data.login;
 
     const fresh = req.query.fresh === "1" || req.query.fresh === "true"
     const cached = cache.get(username)
@@ -133,6 +136,45 @@ app.get("/commits", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch commits" })
     }
 })
+
+
+app.post("/github/token", async (req, res) => {
+    const { code } = req.body;
+    const clientId = process.env.GITHUB_CLIENT_ID ?? process.env.VITE_GITHUB_CLIENT_ID;
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET ?? process.env.VITE_GITHUB_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+        return res.status(500).json({
+            error: "OAuth misconfigured",
+            details: "Missing CLIENT_ID/CLIENT_SECRET (or VITE_GITHUB_CLIENT_ID/VITE_GITHUB_CLIENT_SECRET)",
+        });
+    }
+
+    try {
+        const response = await axios.post(
+            "https://github.com/login/oauth/access_token",
+            {
+                client_id: clientId,
+                client_secret: clientSecret,
+                code,
+            },
+            { headers: { Accept: "application/json" } }
+        );
+
+        if (!response.data?.access_token) {
+            return res.status(400).json({
+                error: "OAuth failed",
+                details: response.data,
+            });
+        }
+
+        res.json(response.data); // contains access_token
+    } catch (err) {
+        const error = err as { response?: { data?: unknown } };
+        console.error("OAuth failed", error?.response?.data ?? err);
+        res.status(500).json({ error: "OAuth failed", details: error?.response?.data });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`Server is alive on http://localhost:${PORT}`)
