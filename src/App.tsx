@@ -13,7 +13,13 @@ const getApiBase = () => {
 
 export default function App() {
   const { commits, setCommits } = useCommits();
-  const { token, isLoading: authLoading, error: authError, login, logout } = useAuth();
+  const {
+    token,
+    isLoading: authLoading,
+    error: authError,
+    login,
+    logout,
+  } = useAuth();
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -65,7 +71,6 @@ export default function App() {
         <CanvasLayer />
       </div>
       <div className="flex flex-col items-center justify-center w-full h-full gap-4 pointer-events-auto">
-        <span className="text-white text-2xl font-mono">{displayText()}</span>
         {!token ? (
           <Button
             type="button"
@@ -75,13 +80,20 @@ export default function App() {
             Sign in with GitHub
           </Button>
         ) : (
-          <Button
-            type="button"
-            onClick={logout}
-            className="px-4 py-2 text-sm text-white border border-white rounded z-10 cursor-pointer"
-          >
-            Sign out
-          </Button>
+          <div className="absolute top-5 flex items-center justify-between w-100 p-1.5 ">
+            <span className="text-white text-lg font-mono">
+              {displayText()}
+            </span>
+
+            <Button
+              type="button"
+              variant="link"
+              onClick={logout}
+              className="px-4 py-2 text-sm text-white cursor-pointer"
+            >
+              Sign out
+            </Button>
+          </div>
         )}
       </div>
     </div>
