@@ -6,12 +6,18 @@ export default function EmbedApp() {
   const { setCommits } = useCommits();
 
   useEffect(() => {
-    const username = new URLSearchParams(window.location.search).get("user") || "simplyyliam";
+    const username =
+      new URLSearchParams(window.location.search).get("user") || "simplyyliam";
 
-    axios.get(`${import.meta.env.VITE_BACKEND_API_BASE}/embed/${username}`)
-      .then(res => setCommits(res.data.total))
-      .catch(err => console.error(err));
+    axios
+      .get(`${import.meta.env.VITE_BACKEND_API_BASE}/embed/${username}`)
+      .then((res) => setCommits(res.data.total))
+      .catch((err) => console.error(err));
   }, [setCommits]);
 
-  return <CanvasLayer />;
+  return (
+    <div className="w-screen h-screen bg-black">
+      <CanvasLayer />
+    </div>
+  );
 }
