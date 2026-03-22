@@ -11,12 +11,24 @@ export default function EmbedApp() {
 
     axios
       .get(`${import.meta.env.VITE_BACKEND_API_BASE}/embed/${username}`)
-      .then((res) => setCommits(res.data.total))
+      .then((res) => {
+        console.log("SERVER DATA:", res.data);
+        setCommits(res.data.totalCommits ?? res.data.totalContributions ?? 0);
+      })
       .catch((err) => console.error(err));
   }, [setCommits]);
 
   return (
-    <div className="w-screen h-screen bg-black">
+    <div
+      style={{
+        width: "100vw",
+        height: "100vh",
+        background: "#010101",
+        position: "fixed",
+        top: 0,
+        left: 0,
+      }}
+    >
       <CanvasLayer />
     </div>
   );
