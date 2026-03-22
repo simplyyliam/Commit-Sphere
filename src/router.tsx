@@ -1,11 +1,11 @@
 import { createBrowserRouter } from "react-router-dom";
 import EmbedApp from "./components/views/embed";
-import Dashboard from "./components/views/dashboard";
+import App from "./App";
 
 
 export const Router = createBrowserRouter([
   {
-    element: <Dashboard/>,
+    element: <App/>,
     index: true
   },
 
