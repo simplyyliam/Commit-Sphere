@@ -184,6 +184,64 @@ app.post("/github/token", async (req, res) => {
     }
 });
 
+
+app.get("/embed/:username", async (req, res) => {
+  const username = req.params.username;
+  const cached = cache.get(username);
+  if (cached && Date.now() - cached.calculatedAt < ONE_HOUR) {
+    return res.json({ total: cached.total, cached: true });
+  }
+
+  const token = process.env.GITHUB_TOKEN; // your server PAT
+  if (!token) return res.status(500).json({ error: "Server token missing" });
+
+  try {
+    const query = `
+      query($login: String!) {
+        user(login: $login) {
+          contributionsCollection {
+            contributionCalendar {
+              totalContributions
+              weeks {
+                contributionDays {
+                  date
+                  contributionCount
+                  color
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const gqlRes = await axios.post(
+      "https://api.github.com/graphql",
+      { query, variables: { login: username } },
+      { headers: { Authorization: `bearer ${token}` } }
+    );
+
+    const calendar = gqlRes.data?.data?.user?.contributionsCollection?.contributionCalendar;
+    if (!calendar) return res.status(500).json({ error: "No calendar data" });
+
+    // Flatten weeks → days with proper types
+    const days: ContributionDay[] = calendar.weeks.flatMap((week: Week) =>
+      week.contributionDays.map((day) => ({
+        ...day,
+        intensity: day.contributionCount / 10, // normalize same as /commits
+      }))
+    );
+
+    const total = calendar.totalContributions;
+    cache.set(username, { total, calculatedAt: Date.now() });
+
+    res.json({ total, days, cached: false });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch embed data" });
+  }
+});
+
 app.listen(PORT, () => {
     console.log(`Server is alive on http://localhost:${PORT}`)
 })
