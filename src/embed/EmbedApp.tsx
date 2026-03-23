@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import axios from "axios";
-import CanvasLayer from "../canvas/canvasLayer";
-import { useCommits } from "@/store/useCommits";
+import { CanvasLayer } from "@/components";
+import { useCommits } from "@/store";
 
 export default function EmbedApp() {
   const { setCommits } = useCommits();
@@ -15,7 +15,6 @@ export default function EmbedApp() {
     axios
       .get(`${apiBase}/embed/${username}`)
       .then((res) => {
-        console.log("API Success:", res.data);
         const count = res.data.totalContributions ?? res.data.totalCommits ?? res.data.total ?? 0;
         setCommits(count);
       })

@@ -1,7 +1,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { useCommits } from "../../store/useCommits";
+import { useCommits } from "@/store";
 
 const mulberry32 = (seed: number) => {
   let t = seed >>> 0;
@@ -43,7 +43,6 @@ export default function CommitSphere() {
   useFrame(() => {
     if (!pointsRef.current) return;
 
-    // pointsRef.current.rotation.x += 0.01;
     pointsRef.current.rotation.y += 0.01;
   });
 

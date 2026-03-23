@@ -21,12 +21,6 @@ type Week = {
     contributionDays: ContributionDay[]
 }
 
-// type ContributionCalendar = {
-//     totalContributions: number
-//     days: ContributionDay[]
-// }
-
-
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -43,7 +37,6 @@ const app = express()
 const parsedPort = Number(process.env.PORT)
 const PORT = Number.isFinite(parsedPort) ? parsedPort : 3000
 
-// const DEFAULT_USERNAME = "simplyyliam"
 const ONE_HOUR = 60 * 60 * 1000
 const cache = new Map<string, CacheEntry>()
 
