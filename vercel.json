@@ -10,11 +10,11 @@
   "rewrites": [
     {
       "source": "/embed",
-      "destination": "/embed/index.html"
+      "destination": "/src/embed/index.html"
     },
     {
       "source": "/embed/(.*)",
-      "destination": "/embed/index.html"
+      "destination": "/src/embed/index.html"
     },
     { 
       "source": "/((?!src/|assets/).*)", 
