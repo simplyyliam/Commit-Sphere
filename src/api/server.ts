@@ -4,22 +4,7 @@ import dotenv from "dotenv"
 import axios from "axios"
 import path from "path"
 import { fileURLToPath } from "url"
-
-type CacheEntry = {
-    total: number
-    calculatedAt: number
-}
-
-type ContributionDay = {
-    date: string
-    contributionCount: number
-    color: string
-    intensity?: number
-}
-
-type Week = {
-    contributionDays: ContributionDay[]
-}
+import type { CacheEntry, ContributionDay, Week } from "@/types/ContributionCommits"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -65,6 +50,7 @@ app.get("/commits", async (req, res) => {
         return res.json({
             totalCommits: cached.total,
             cached: true,
+            days: cached.days,
             user: username,
             calculatedAt: new Date(cached.calculatedAt).toISOString()
         })
@@ -123,7 +109,7 @@ app.get("/commits", async (req, res) => {
         // Total contributions (already provided, but you can recompute too)
         const total = calendar.totalContributions
 
-        cache.set(username, { total, calculatedAt: Date.now() })
+        cache.set(username, { total, days, calculatedAt: Date.now() })
 
         res.json({
             totalContributions: total,
@@ -226,7 +212,7 @@ app.get("/embed/:username", async (req, res) => {
     );
 
     const total = calendar.totalContributions;
-    cache.set(username, { total, calculatedAt: Date.now() });
+    cache.set(username, { total, days, calculatedAt: Date.now() });
 
     res.json({ total, days, cached: false });
   } catch (err) {

@@ -2,8 +2,8 @@
 import axios from "axios";
 import { getApiBase } from "../lib";
 
-const TOKEN_KEY = "github_access_token";
-const STATE_KEY = "github_oauth_state";
+export const TOKEN_KEY = "github_access_token";
+export const STATE_KEY = "github_oauth_state";
 
 const getRedirectUri = () => {
   const envRedirect = import.meta.env.VITE_GITHUB_REDIRECT_URI as string | undefined;
