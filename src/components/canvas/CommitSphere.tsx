@@ -16,80 +16,65 @@ const mulberry32 = (seed: number) => {
 };
 
 export default function CommitSphere() {
-  const [color, setColor] = useState<THREE.Color[]>([]);
+  const [colors, setColors] = useState<THREE.Color[]>([]);
   const token = localStorage.getItem(TOKEN_KEY);
+  const pointsRef = useRef<THREE.Mesh>(null!);
 
   useEffect(() => {
-    const fetchColor = async () => {
-      const { data } = await axios.get("/commits", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!token) {
-        console.error("No token found");
-        return;
-      }
-      if (!data.days) {
-        console.error("No days returned", data);
-        return;
-      }
-      const commitColors: THREE.Color[] = [];
-      const commitCounts: number[] = [];
+    const fetchCommits = async () => {
+      if (!token) return console.error("No token found");
 
+      const { data } = await axios.get("/commits", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!data.days) return console.error("No days returned", data);
+
+      // Expand each day into multiple commits
+      const commitColors: THREE.Color[] = [];
       data.days.forEach((day: ContributionDay) => {
-        if (day.contributionCount > 0) {
+        for (let i = 0; i < day.contributionCount; i++) {
           commitColors.push(new THREE.Color(day.color));
-          commitCounts.push(day.contributionCount);
         }
       });
 
-      console.log("Days with commits (points to render):", commitColors.length);
-      console.log(
-        "Total commits (sum):",
-        commitCounts.reduce((a, b) => a + b, 0),
-      );
-      setColor(commitColors);
-      console.log("API RESPONSE:", data);
+      console.log("Total commits (points to render):", commitColors.length);
+      setColors(commitColors);
     };
 
-    fetchColor();
+    fetchCommits();
   }, [token]);
 
-  const pointsRef = useRef<THREE.Mesh>(null!);
-
-  const { points, colors } = useMemo(() => {
+  const { points, colorsArray } = useMemo(() => {
     const pts: number[] = [];
     const cols: number[] = [];
-    const count = color.length;
+    const count = colors.length;
     const radius = 5;
     const rng = mulberry32(0xc0ffee + count);
 
     for (let i = 0; i < count; i++) {
-      const day = color[i];
+      const color = colors[i];
       const u = rng();
       const v = rng();
-
-      const theta = 2 * Math.PI * u; // Theta is looking left and right
-      const phi = Math.acos(2 * v - 1); // Phi is looking up and down
+      const theta = 2 * Math.PI * u;
+      const phi = Math.acos(2 * v - 1);
 
       const x = radius * Math.sin(phi) * Math.cos(theta);
       const y = radius * Math.sin(phi) * Math.sin(theta);
       const z = radius * Math.cos(phi);
 
       pts.push(x, y, z);
-      cols.push(day.r, day.g, day.b);
+      cols.push(color.r, color.g, color.b);
     }
 
     return {
       points: new Float32Array(pts),
-      colors: new Float32Array(cols),
+      colorsArray: new Float32Array(cols),
     };
-  }, [color]);
+  }, [colors]);
 
   useFrame(() => {
     if (!pointsRef.current) return;
-
     pointsRef.current.rotation.y += 0.01;
   });
 
@@ -97,7 +82,7 @@ export default function CommitSphere() {
     <points ref={pointsRef}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[points, 3]} />
-        <bufferAttribute attach="attributes-color" args={[colors, 3]} />
+        <bufferAttribute attach="attributes-color" args={[colorsArray, 3]} />
       </bufferGeometry>
       <pointsMaterial size={0.02} vertexColors />
     </points>
