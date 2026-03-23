@@ -1,13 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
+import { getApiBase } from "../lib";
 
 const TOKEN_KEY = "github_access_token";
 const STATE_KEY = "github_oauth_state";
-
-const getApiBase = () => {
-  const base = import.meta.env.VITE_API_BASE as string | undefined;
-  return base && base.trim().length > 0 ? base : "http://localhost:3000";
-};
 
 const getRedirectUri = () => {
   const envRedirect = import.meta.env.VITE_GITHUB_REDIRECT_URI as string | undefined;
@@ -82,7 +78,7 @@ export const useAuth = (): UseAuth => {
 
     const expectedState = sessionStorage.getItem(STATE_KEY);
     if (!expectedState) {
-      // weird edge case: sessionStorage missing state → do nothing
+      // weird edge case: sessionStorage missing state -> do nothing
       return;
     }
     if (returnedState !== expectedState) {
@@ -104,7 +100,7 @@ export const useAuth = (): UseAuth => {
           return;
         }
 
-        // ✅ Save token and clear state
+        // Save token and clear state
         localStorage.setItem(TOKEN_KEY, accessToken);
         sessionStorage.removeItem(STATE_KEY);
 

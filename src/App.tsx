@@ -1,15 +1,10 @@
 import { useEffect, useState } from "react";
-import { CanvasLayer } from "./components";
+import { CanvasLayer, Button } from "./components";
 import axios from "axios";
-import { useCommits } from "./store/useCommits";
-import { useAuth } from "./hook/useAuth";
+import { useCommits } from "./store";
+import { useAuth } from "./hooks";
 import Callback from "./Callback";
-import { Button } from "./components/ui/button";
-
-const getApiBase = () => {
-  const base = import.meta.env.VITE_API_BASE as string | undefined;
-  return base && base.trim().length > 0 ? base : "http://localhost:3000";
-};
+import { getApiBase } from "./lib";
 
 export default function App() {
   const { commits, setCommits } = useCommits();
@@ -32,7 +27,6 @@ export default function App() {
         const res = await axios.get(`${getApiBase()}/commits`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log("API RESPONSE:", res.data);
         setCommits(res.data.totalCommits ?? res.data.totalContributions ?? 0);
       } catch (error) {
         setError(true);
