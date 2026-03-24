@@ -181,7 +181,14 @@ app.get("/embed/:username", async (req, res) => {
     const cachedKey = `${username}-${year}`
     const cached = cache.get(cachedKey)
     if (cached && Date.now() - cached.calculatedAt < ONE_HOUR) {
-        return res.json({ total: cached.total, cached: true });
+        return res.json({
+            total: cached.total,
+            totalContributions: cached.total,
+            days: cached.days,
+            cached: true,
+            user: username,
+            calculatedAt: new Date(cached.calculatedAt).toISOString()
+        });
     }
 
     const token = process.env.GITHUB_TOKEN; // your server PAT
@@ -233,9 +240,12 @@ app.get("/embed/:username", async (req, res) => {
         cache.set(cachedKey, { total, days, calculatedAt: Date.now() })
 
         res.json({
+            total: total,
             totalContributions: total,
-            days: cached?.days,
-            cached: false
+            days,
+            cached: false,
+            user: username,
+            calculatedAt: new Date(cache.get(cachedKey)!.calculatedAt).toISOString()
         });
     } catch (err) {
         console.error(err);

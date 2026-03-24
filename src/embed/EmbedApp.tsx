@@ -6,8 +6,8 @@ import { getApiBase } from "@/lib";
 
 export default function EmbedApp() {
   const { setCommits, setDays } = useCommits();
-  const username = new URLSearchParams(window.location.search).get("user") || "simplyyliam";
   const params = new URLSearchParams(window.location.search);
+  const username = params.get("user") || "simplyyliam";
   const year = params.get("year");
 
   useEffect(() => {
