@@ -7,7 +7,7 @@ import Callback from "./Callback";
 import { getApiBase } from "./lib";
 
 export default function App() {
-  const { commits, setCommits } = useCommits();
+  const { commits, setCommits, setDays } = useCommits();
   const {
     token,
     isLoading: authLoading,
@@ -24,7 +24,7 @@ export default function App() {
 
     const fetchCommits = async () => {
       try {
-        const res = await axios.get(`${getApiBase()}/commits?year=2025`, {
+        const res = await axios.get(`${getApiBase()}/commits?year=2026`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const total =
@@ -33,13 +33,14 @@ export default function App() {
           res.data.total ??
           0;
         setCommits(total);
+        setDays(res.data.days ?? null);
       } catch (error) {
         setError(true);
         console.error("Fronted error fetching commits:", error);
       }
     };
     fetchCommits();
-  }, [token, setCommits]);
+  }, [token, setCommits, setDays]);
 
   if (window.location.pathname === "/callback") {
     return <Callback isLoading={authLoading} error={authError} token={token} />;

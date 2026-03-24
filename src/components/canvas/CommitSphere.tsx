@@ -1,10 +1,8 @@
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import axios from "axios";
-import { TOKEN_KEY } from "@/hooks/useAuth";
 import type { ContributionDay } from "@/types/ContributionCommits";
-import { getApiBase } from "@/lib";
+import { useCommits } from "@/store";
 
 const mulberry32 = (seed: number) => {
   let t = seed >>> 0;
@@ -17,37 +15,31 @@ const mulberry32 = (seed: number) => {
 };
 
 export default function CommitSphere() {
-  const [colors, setColors] = useState<THREE.Color[]>([]);
-  const token = localStorage.getItem(TOKEN_KEY);
+  const { days } = useCommits();
   const pointsRef = useRef<THREE.Mesh>(null!);
 
-  useEffect(() => {
-    const fetchCommits = async () => {
-      if (!token) return console.error("No token found");
+  const colors = useMemo(() => {
+    if (!days || days.length === 0) {
+      return [];
+    }
 
-      const { data } = await axios.get(`${getApiBase()}/commits?year=2025`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    const commitColors: THREE.Color[] = [];
+    const maxCount = Math.max(
+      ...days.map((d: ContributionDay) => d.contributionCount),
+      1
+    );
 
-      if (!data.days) return console.error("No days returned", data);
+    days.forEach((day: ContributionDay) => {
+      for (let i = 0; i < day.contributionCount; i++) {
+        const baseColor = new THREE.Color("#8157ff");
+        const brightness = 0.1 + 0.9 * (day.contributionCount / maxCount);
+        const color = baseColor.clone().multiplyScalar(brightness);
+        commitColors.push(color);
+      }
+    });
 
-      // Expand each day into multiple commits
-      const commitColors: THREE.Color[] = [];
-      data.days.forEach((day: ContributionDay) => {
-        for (let i = 0; i < day.contributionCount; i++) {
-          const baseColor = new THREE.Color("#8157ff")
-          const maxCount = Math.max(...data.days.map((d: ContributionDay) => d.contributionCount), 1)
-          const brightness = 0.1 + 0.9 * (day.contributionCount / maxCount) 
-          const color = baseColor.clone().multiplyScalar(brightness)
-          commitColors.push(color);
-        }
-      });
-      console.log("Total commits (points to render):", commitColors.length);
-      setColors(commitColors);
-    };
-
-    fetchCommits();
-  }, [token]);
+    return commitColors;
+  }, [days]);
 
   const { points, colorsArray } = useMemo(() => {
     const pts: number[] = [];
