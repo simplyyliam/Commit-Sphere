@@ -43,9 +43,10 @@ app.get("/commits", async (req, res) => {
     });
 
     const username = userRes.data.login;
-
+    const year = Number(req.query.year) || new Date().getFullYear()
+    const cachedKey = `${username}-${year}`
+    const cached = cache.get(cachedKey)
     const fresh = req.query.fresh === "1" || req.query.fresh === "true"
-    const cached = cache.get(username)
     if (!fresh && cached && Date.now() - cached.calculatedAt < ONE_HOUR) {
         return res.json({
             totalCommits: cached.total,
@@ -63,11 +64,16 @@ app.get("/commits", async (req, res) => {
         "User-Agent": "commit-sphere"
     }
 
+
+    const from = new Date(`${year}-01-01T00:00:00Z`).toISOString()
+    const to = new Date(`${year}-12-31T23:59:59Z`).toISOString()
+
+
     try {
         const query = `
-        query($login: String!) {
+        query($login: String!, $from: DateTime!, $to: DateTime!) {
         user(login: $login) {
-        contributionsCollection {
+        contributionsCollection (from: $from, to: $to) {
             contributionCalendar {
             totalContributions
             weeks {
@@ -85,7 +91,7 @@ app.get("/commits", async (req, res) => {
 
         const gqlRes = await axios.post(
             "https://api.github.com/graphql",
-            { query, variables: { login: username } },
+            { query, variables: { login: username, from, to } },
             { headers }
         )
 
@@ -101,22 +107,23 @@ app.get("/commits", async (req, res) => {
         }
 
         // Flatten weeks → days
-        const days: ContributionDay[] = calendar.weeks.flatMap((week: Week) => week.contributionDays.map((day) => ({
-            ...day,
-            intensity: day.contributionCount / 10 // Normalize
-        })))
-
+        const days: ContributionDay[] = calendar.weeks
+            .flatMap((week: Week) => week.contributionDays)
+            .map((day: ContributionDay) => ({
+                ...day,
+                intensity: day.contributionCount / 10
+            }));
         // Total contributions (already provided, but you can recompute too)
-        const total = calendar.totalContributions
+        const total = days.reduce((sum, day) => sum + day.contributionCount, 0)
 
-        cache.set(username, { total, days, calculatedAt: Date.now() })
+        cache.set(cachedKey, { total, days, calculatedAt: Date.now() })
 
         res.json({
             totalContributions: total,
             days,
             cached: false,
             user: username,
-            calculatedAt: new Date(cache.get(username)!.calculatedAt).toISOString()
+            calculatedAt: new Date(cache.get(cachedKey)!.calculatedAt).toISOString()
         })
     } catch (err) {
         console.error(err)
@@ -165,60 +172,67 @@ app.post("/github/token", async (req, res) => {
 
 
 app.get("/embed/:username", async (req, res) => {
-  const username = req.params.username;
-  const cached = cache.get(username);
-  if (cached && Date.now() - cached.calculatedAt < ONE_HOUR) {
-    return res.json({ total: cached.total, cached: true });
-  }
+    const username = req.params.username;
+    const year = Number(req.query.year) || new Date().getFullYear()
+    const cachedKey = `${username}-${year}`
+    const cached = cache.get(cachedKey)
+    if (cached && Date.now() - cached.calculatedAt < ONE_HOUR) {
+        return res.json({ total: cached.total, cached: true });
+    }
 
-  const token = process.env.GITHUB_TOKEN; // your server PAT
-  if (!token) return res.status(500).json({ error: "Server token missing" });
+    const token = process.env.GITHUB_TOKEN; // your server PAT
+    if (!token) return res.status(500).json({ error: "Server token missing" });
 
-  try {
-    const query = `
-      query($login: String!) {
+    const from = new Date(`${year}-01-01T00:00:00Z`).toISOString()
+    const to = new Date(`${year}-12-31T23:59:59Z`).toISOString()
+
+
+    try {
+        const query = `
+        query($login: String!, $from: DateTime!, $to: DateTime!) {
         user(login: $login) {
-          contributionsCollection {
+        contributionsCollection (from: $from, to: $to) {
             contributionCalendar {
-              totalContributions
-              weeks {
+            totalContributions
+            weeks {
                 contributionDays {
-                  date
-                  contributionCount
-                  color
+                date
+                contributionCount
+                color
                 }
-              }
             }
-          }
+            }
         }
-      }
-    `;
+        }
+        }
+`
 
-    const gqlRes = await axios.post(
-      "https://api.github.com/graphql",
-      { query, variables: { login: username } },
-      { headers: { Authorization: `bearer ${token}` } }
-    );
+        const gqlRes = await axios.post(
+            "https://api.github.com/graphql",
+            { query, variables: { login: username, from, to } },
+            { headers: { Authorization: `bearer ${token}` } }
+        );
 
-    const calendar = gqlRes.data?.data?.user?.contributionsCollection?.contributionCalendar;
-    if (!calendar) return res.status(500).json({ error: "No calendar data" });
+        const calendar = gqlRes.data?.data?.user?.contributionsCollection?.contributionCalendar;
+        if (!calendar) return res.status(500).json({ error: "No calendar data" });
 
-    // Flatten weeks → days with proper types
-    const days: ContributionDay[] = calendar.weeks.flatMap((week: Week) =>
-      week.contributionDays.map((day) => ({
-        ...day,
-        intensity: day.contributionCount / 10, // normalize same as /commits
-      }))
-    );
+        // Flatten weeks → days with proper types
+        const days: ContributionDay[] = calendar.weeks
+            .flatMap((week: Week) => week.contributionDays)
+            .map((day: ContributionDay) => ({
+                ...day,
+                intensity: day.contributionCount / 10
+            }));
+        // Total contributions (already provided, but you can recompute too)
+        const total = days.reduce((sum, day) => sum + day.contributionCount, 0)
 
-    const total = calendar.totalContributions;
-    cache.set(username, { total, days, calculatedAt: Date.now() });
+        cache.set(cachedKey, { total, days, calculatedAt: Date.now() })
 
-    res.json({ total, days, cached: false });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to fetch embed data" });
-  }
+        res.json({ total, days, cached: false });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to fetch embed data" });
+    }
 });
 
 app.listen(PORT, () => {

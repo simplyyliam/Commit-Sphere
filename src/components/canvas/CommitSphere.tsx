@@ -25,7 +25,7 @@ export default function CommitSphere() {
     const fetchCommits = async () => {
       if (!token) return console.error("No token found");
 
-      const { data } = await axios.get(`${getApiBase()}/commits`, {
+      const { data } = await axios.get(`${getApiBase()}/commits?year=2025`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -36,7 +36,8 @@ export default function CommitSphere() {
       data.days.forEach((day: ContributionDay) => {
         for (let i = 0; i < day.contributionCount; i++) {
           const baseColor = new THREE.Color("#8157ff")
-          const brightness = 0.05 + day.intensity 
+          const maxCount = Math.max(...data.days.map((d: ContributionDay) => d.contributionCount), 1)
+          const brightness = 0.1 + 0.9 * (day.contributionCount / maxCount) 
           const color = baseColor.clone().multiplyScalar(brightness)
           commitColors.push(color);
         }

@@ -24,10 +24,15 @@ export default function App() {
 
     const fetchCommits = async () => {
       try {
-        const res = await axios.get(`${getApiBase()}/commits`, {
+        const res = await axios.get(`${getApiBase()}/commits?year=2025`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setCommits(res.data.totalCommits ?? res.data.totalContributions ?? 0);
+        const total =
+          res.data.totalCommits ??
+          res.data.totalContributions ??
+          res.data.total ??
+          0;
+        setCommits(total);
       } catch (error) {
         setError(true);
         console.error("Fronted error fetching commits:", error);
