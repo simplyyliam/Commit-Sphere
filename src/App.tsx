@@ -7,7 +7,7 @@ import Callback from "./Callback";
 import { getApiBase } from "./lib";
 
 export default function App() {
-  const { commits, setCommits, setDays } = useCommits();
+  const { commits, setCommits, setDays, setSphereColor, sphereColor } = useCommits();
   const {
     token,
     isLoading: authLoading,
@@ -95,6 +95,7 @@ export default function App() {
             </Button>
           </div>
         )}
+        <input type="color" className="absolute bottom-5" onChange={(e) => setSphereColor(e.target.value)} value={sphereColor}/>
       </div>
     </div>
   );

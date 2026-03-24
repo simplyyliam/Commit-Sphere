@@ -15,7 +15,7 @@ const mulberry32 = (seed: number) => {
 };
 
 export default function CommitSphere() {
-  const { days } = useCommits();
+  const { days, sphereColor } = useCommits();
   const pointsRef = useRef<THREE.Mesh>(null!);
 
   const colors = useMemo(() => {
@@ -28,7 +28,8 @@ export default function CommitSphere() {
       ...days.map((d: ContributionDay) => d.contributionCount),
       1,
     );
-    const baseColor = new THREE.Color("#8157ff");
+   
+    const baseColor = new THREE.Color(sphereColor);
     const tempColor = new THREE.Color(); // Reuse one object
 
     days.forEach((day) => {
@@ -40,7 +41,7 @@ export default function CommitSphere() {
       }
     });
     return commitColors;
-  }, [days]);
+  }, [days,sphereColor]);
 
   const { points, colorsArray } = useMemo(() => {
     const pts: number[] = [];
