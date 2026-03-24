@@ -10,15 +10,15 @@
   "rewrites": [
     {
       "source": "/embed",
-      "destination": "/src/embed/index.html"
+      "destination": "/src/embed/embed.html"
     },
     {
       "source": "/embed/(.*)",
-      "destination": "/src/embed/index.html"
+      "destination": "/src/embed/embed.html"
     },
-    { 
-      "source": "/((?!src/|assets/).*)", 
-      "destination": "/" 
+    {
+      "source": "/((?!src/|assets/).*)",
+      "destination": "/index.html"
     }
   ]
 }
