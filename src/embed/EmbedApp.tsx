@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import axios from "axios";
 import { CanvasLayer } from "@/components";
 import { useCommits } from "@/store";
+import { getApiBase } from "@/lib";
 
 export default function EmbedApp() {
   const { setCommits } = useCommits();
@@ -9,13 +10,11 @@ export default function EmbedApp() {
 
   useEffect(() => {
     setCommits(0); 
-
-    const apiBase = import.meta.env.VITE_BACKEND_API_BASE || import.meta.env.VITE_API_BASE;
     
     axios
-      .get(`${apiBase}/embed/${username}`)
+      .get(`${getApiBase()}/embed/${username}`)
       .then((res) => {
-        const count = res.data.totalContributions ?? res.data.totalCommits ?? res.data.total ?? 0;
+        const count = res.data.totalCommits ?? 0;
         setCommits(count);
       })
       .catch((err) => console.error("API Error:", err));

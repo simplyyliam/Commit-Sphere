@@ -228,7 +228,11 @@ app.get("/embed/:username", async (req, res) => {
 
         cache.set(cachedKey, { total, days, calculatedAt: Date.now() })
 
-        res.json({ total, days, cached: false });
+        res.json({
+            totalContributions: total,
+            days,
+            cached: false
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to fetch embed data" });
