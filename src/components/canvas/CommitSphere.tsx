@@ -4,6 +4,7 @@ import * as THREE from "three";
 import axios from "axios";
 import { TOKEN_KEY } from "@/hooks/useAuth";
 import type { ContributionDay } from "@/types/ContributionCommits";
+import { getApiBase } from "@/lib";
 
 const mulberry32 = (seed: number) => {
   let t = seed >>> 0;
@@ -24,7 +25,7 @@ export default function CommitSphere() {
     const fetchCommits = async () => {
       if (!token) return console.error("No token found");
 
-      const { data } = await axios.get("/commits", {
+      const { data } = await axios.get(`${getApiBase()}/commits`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
