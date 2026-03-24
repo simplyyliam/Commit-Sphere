@@ -34,10 +34,12 @@ export default function CommitSphere() {
       const commitColors: THREE.Color[] = [];
       data.days.forEach((day: ContributionDay) => {
         for (let i = 0; i < day.contributionCount; i++) {
-          commitColors.push(new THREE.Color(day.color));
+          const baseColor = new THREE.Color("#8157ff")
+          const brightness = 0.05 + day.intensity 
+          const color = baseColor.clone().multiplyScalar(brightness)
+          commitColors.push(color);
         }
       });
-
       console.log("Total commits (points to render):", commitColors.length);
       setColors(commitColors);
     };
@@ -49,7 +51,7 @@ export default function CommitSphere() {
     const pts: number[] = [];
     const cols: number[] = [];
     const count = colors.length;
-    const radius = 5;
+    const radius = 2;
     const rng = mulberry32(0xc0ffee + count);
 
     for (let i = 0; i < count; i++) {

@@ -19,10 +19,4 @@ export default defineConfig({
       },
     },
   },
-  server: {
-     proxy: {
-      "/commits": "http://localhost:3000",
-      "/embed": "http://localhost:3000",
-    },
-  }
 })

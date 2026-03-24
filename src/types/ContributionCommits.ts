@@ -8,7 +8,7 @@ export type ContributionDay = {
     date: string
     contributionCount: number
     color: string
-    intensity?: number
+    intensity: number
 }
 
 export type Week = {
