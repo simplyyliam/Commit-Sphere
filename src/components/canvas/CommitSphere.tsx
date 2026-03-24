@@ -26,18 +26,19 @@ export default function CommitSphere() {
     const commitColors: THREE.Color[] = [];
     const maxCount = Math.max(
       ...days.map((d: ContributionDay) => d.contributionCount),
-      1
+      1,
     );
+    const baseColor = new THREE.Color("#8157ff");
+    const tempColor = new THREE.Color(); // Reuse one object
 
-    days.forEach((day: ContributionDay) => {
+    days.forEach((day) => {
+      const brightness = 0.1 + 0.9 * (day.contributionCount / maxCount);
+      tempColor.copy(baseColor).multiplyScalar(brightness);
+
       for (let i = 0; i < day.contributionCount; i++) {
-        const baseColor = new THREE.Color("#8157ff");
-        const brightness = 0.1 + 0.9 * (day.contributionCount / maxCount);
-        const color = baseColor.clone().multiplyScalar(brightness);
-        commitColors.push(color);
+        commitColors.push(tempColor.clone());
       }
     });
-
     return commitColors;
   }, [days]);
 
@@ -74,6 +75,9 @@ export default function CommitSphere() {
     pointsRef.current.rotation.y += 0.01;
   });
 
+  if (!days || days.length === 0 || points.length === 0) {
+    return null; // Don't render anything until data exists
+  }
   return (
     <points ref={pointsRef}>
       <bufferGeometry>

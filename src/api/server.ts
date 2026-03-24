@@ -25,7 +25,11 @@ const PORT = Number.isFinite(parsedPort) ? parsedPort : 3000
 const ONE_HOUR = 60 * 60 * 1000
 const cache = new Map<string, CacheEntry>()
 
-app.use(cors())
+app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json())
 
 app.get("/ping", (_req: Request, res: Response) => {
@@ -230,7 +234,7 @@ app.get("/embed/:username", async (req, res) => {
 
         res.json({
             totalContributions: total,
-            days,
+            days: cached?.days,
             cached: false
         });
     } catch (err) {

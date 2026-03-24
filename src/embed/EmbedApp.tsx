@@ -7,13 +7,15 @@ import { getApiBase } from "@/lib";
 export default function EmbedApp() {
   const { setCommits, setDays } = useCommits();
   const username = new URLSearchParams(window.location.search).get("user") || "simplyyliam";
+  const params = new URLSearchParams(window.location.search);
+  const year = params.get("year");
 
   useEffect(() => {
     setCommits(0);
     setDays(null);
-    
+    const url = `${getApiBase()}/embed/${username}${year ? `?year=${year}` : ''}`;
     axios
-      .get(`${getApiBase()}/embed/${username}`)
+      .get(url)
       .then((res) => {
         const count =
           res.data.totalCommits ??
@@ -24,7 +26,7 @@ export default function EmbedApp() {
         setDays(res.data.days ?? null);
       })
       .catch((err) => console.error("API Error:", err));
-  }, [username, setCommits, setDays]);
+  }, [username, setCommits, setDays, year]);
 
   return (
     <div style={{ width: "100vw", height: "100vh", background: "black", overflow: "hidden" }}>
