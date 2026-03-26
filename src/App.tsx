@@ -7,7 +7,7 @@ import Callback from "./Callback";
 import { getApiBase } from "./lib";
 
 export default function App() {
-  const { setCommits, setDays, setSphereColor, sphereColor } = useCommits();
+  const { setCommits, setDays } = useCommits();
   const {
     token,
     isLoading: authLoading,
