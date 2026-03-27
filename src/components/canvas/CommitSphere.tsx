@@ -31,10 +31,13 @@ export default function CommitSphere() {
    
     const baseColor = new THREE.Color(sphereColor);
     const tempColor = new THREE.Color(); // Reuse one object
+    const glowThreshold = 20;
+    const glowBoost = 1.75;
 
     days.forEach((day) => {
       const brightness = 0.1 + 0.9 * (day.contributionCount / maxCount);
-      tempColor.copy(baseColor).multiplyScalar(brightness);
+      const boosted = day.contributionCount >= glowThreshold ? glowBoost : 1;
+      tempColor.copy(baseColor).multiplyScalar(brightness * boosted);
 
       for (let i = 0; i < day.contributionCount; i++) {
         commitColors.push(tempColor.clone());
@@ -85,7 +88,8 @@ export default function CommitSphere() {
         <bufferAttribute attach="attributes-position" args={[points, 3]} />
         <bufferAttribute attach="attributes-color" args={[colorsArray, 3]} />
       </bufferGeometry>
-      <pointsMaterial size={0.02} vertexColors />
+      <pointsMaterial size={0.02} vertexColors toneMapped={false} />
     </points>
   );
 }
+
