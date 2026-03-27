@@ -1,7 +1,7 @@
 # 🌌 Commit Sphere
 
 A simple, elegant way to visualize your GitHub commits in 3D space.
-<img width="2095" height="1311" alt="image" src="https://github.com/user-attachments/assets/29b8aa60-15f1-4227-993c-a12fced518f5" />
+<img width="2296" height="1371" alt="image" src="https://github.com/user-attachments/assets/58cd36fc-24a9-4b33-92a1-7551d1362275" />
 
 ---
 
@@ -43,6 +43,22 @@ It’s minimal, but it sets the foundation for something more expressive.
 * 🎯 **Clean, Minimal Rendering**
   Focused purely on structure and motion (no heavy UI yet)
 
+* 🧩 **Embeddable + Persistent**
+
+  Embed your sphere anywhere using an iframe.  
+  Customize the year and color in the app `https://commit-sphere.vercel.app`, and your embed updates automatically.
+
+  **Example:**
+  ```html
+  <iframe 
+    src="https://commit-sphere.vercel.app/embed?user=YOUR_GITHUB_USERNAME"
+    width="400"
+    height="400"
+    frameborder="0"
+  ></iframe>
+ <img width="2324" height="1398" alt="image" src="https://github.com/user-attachments/assets/7a42ad66-bd81-425e-9035-f13ca9351cb2" />
+  (used 2025 because I have more commits there for better visuals 😅 )
+  
 ---
 
 ## 🧩 Tech Stack
@@ -65,7 +81,7 @@ It’s minimal, but it sets the foundation for something more expressive.
 ### 1. Clone the repo
 
 ```
-git clone https://github.com/your-username/commit-sphere.git
+git clone https://github.com/simplyyliam/commit-sphere.git
 cd commit-sphere
 ```
 
