@@ -17,6 +17,8 @@ export default function App() {
   } = useAuth();
   // const [error, setError] = useState(false);
 
+  const { year } = useCommits()
+
   useEffect(() => {
     if (!token) {
       return;
@@ -24,7 +26,7 @@ export default function App() {
 
     const fetchCommits = async () => {
       try {
-        const res = await axios.get(`${getApiBase()}/commits?year=2026`, {
+        const res = await axios.get(`${getApiBase()}/commits?year=${year}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const total =
@@ -40,7 +42,7 @@ export default function App() {
       }
     };
     fetchCommits();
-  }, [token, setCommits, setDays]);
+  }, [token, setCommits, setDays, year]);
 
   if (window.location.pathname === "/callback") {
     return <Callback isLoading={authLoading} error={authError} token={token} />;

@@ -46,7 +46,53 @@ app.get("/commits", async (req, res) => {
         headers: { Authorization: `Bearer ${token}` },
     });
 
+    
+    
+    
     const username = userRes.data.login;
+
+
+
+    const headers = {
+        Authorization: `bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "commit-sphere"
+    }
+
+        const allYearsQuery = `
+        query AllYears($login: String!) {
+            user(login: $login) {
+            contributionsCollection {
+                contributionYears
+            }
+            }
+        }
+        `;
+
+
+        
+
+    const allYearsRes = await axios.post(
+        "https://api.github.com/graphql",
+        { query: allYearsQuery, variables: { login: username } },
+        { headers }
+    );
+
+    if (allYearsRes.data?.errors?.length) {
+        return res.status(500).json({ error: "GitHub GraphQL error", details: allYearsRes.data.errors });
+    }
+
+
+    const allYears =
+        allYearsRes.data?.data?.user?.contributionsCollection?.contributionYears ?? [];
+
+
+    if (allYears.length === 0) {
+        console.warn("No years returned for selector");
+    }
+
+    
     const year = Number(req.query.year) || new Date().getFullYear()
     const cachedKey = `${username}-${year}`
     const cached = cache.get(cachedKey)
@@ -56,16 +102,10 @@ app.get("/commits", async (req, res) => {
             totalCommits: cached.total,
             cached: true,
             days: cached.days,
+            allYears: cached.allYears ?? [],
             user: username,
             calculatedAt: new Date(cached.calculatedAt).toISOString()
         })
-    }
-
-    const headers = {
-        Authorization: `bearer ${token}`,
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "commit-sphere"
     }
 
 
@@ -106,6 +146,8 @@ app.get("/commits", async (req, res) => {
         const calendar =
             gqlRes.data?.data?.user?.contributionsCollection?.contributionCalendar
 
+
+
         if (!calendar) {
             return res.status(500).json({ error: "No calendar data returned" })
         }
@@ -120,11 +162,12 @@ app.get("/commits", async (req, res) => {
         // Total contributions (already provided, but you can recompute too)
         const total = days.reduce((sum, day) => sum + day.contributionCount, 0)
 
-        cache.set(cachedKey, { total, days, calculatedAt: Date.now() })
+        cache.set(cachedKey, { total, days, allYears, calculatedAt: Date.now() })
 
         res.json({
             totalContributions: total,
             days,
+            allYears,
             cached: false,
             user: username,
             calculatedAt: new Date(cache.get(cachedKey)!.calculatedAt).toISOString()

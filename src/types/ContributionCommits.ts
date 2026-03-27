@@ -1,6 +1,7 @@
 export type CacheEntry = {
     total: number
     days: ContributionDay[]
+    allYears?: number[]
     calculatedAt: number
 }
 

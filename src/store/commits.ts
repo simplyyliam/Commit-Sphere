@@ -9,6 +9,10 @@ type Commits = {
   setDays: (value: ContributionDay[] | null) => void;
   sphereColor: string;
   setSphereColor: (color: string) => void;
+  year: number | null
+  setYears: (value: number) => void
+  displayYears: number[] 
+  setDisplayYears: (value: number[]) => void
 };
 
 export const useCommits = create<Commits>()(
@@ -20,11 +24,19 @@ export const useCommits = create<Commits>()(
       setDays: (value) => set({ days: value }),
       sphereColor: "#ffffff",
       setSphereColor: (color) => set({ sphereColor: color }),
+
+
+      displayYears: [],
+      setDisplayYears: (value) => set({ displayYears: value }),
+      year: new Date().getFullYear(), // Defaults to the current year
+      setYears: (value) => set({ year: value })
     }),
   {
     name: "commit-sphere-storage",
     partialize: (state) => ({
       sphereColor: state.sphereColor,
+      year: state.year,
+      displayYears: state.displayYears
     }),
   }
   )
