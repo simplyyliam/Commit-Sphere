@@ -40,6 +40,22 @@ export default function Toolbar() {
 
     fetchYears();
   }, [token, setDisplayYears]);
+
+  useEffect(() => {
+    if (!token) return;
+    const savePrefs = async () => {
+      try {
+        await axios.post(
+          `${getApiBase()}/prefs`,
+          { year, color: sphereColor },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } catch (error) {
+        console.log("Failed to save preferences", error);
+      }
+    };
+    savePrefs();
+  }, [token, year, sphereColor]);
   return (
     <div className="flex items-center justify-center gap-2.5 absolute bottom-5">
       <input

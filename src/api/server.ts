@@ -3,6 +3,7 @@ import cors from "cors"
 import dotenv from "dotenv"
 import axios from "axios"
 import path from "path"
+import { promises as fs } from "fs"
 import { fileURLToPath } from "url"
 import type { CacheEntry, ContributionDay, Week } from "@/types/ContributionCommits"
 
@@ -24,6 +25,39 @@ const PORT = Number.isFinite(parsedPort) ? parsedPort : 3000
 
 const ONE_HOUR = 60 * 60 * 1000
 const cache = new Map<string, CacheEntry>()
+const prefsPath = path.resolve(__dirname, "..", "..", "data", "user-preferences.json")
+
+type UserPrefs = {
+    year?: number
+    color?: string
+    updatedAt?: number
+}
+
+const readPrefs = async (): Promise<Record<string, UserPrefs>> => {
+    try {
+        const raw = await fs.readFile(prefsPath, "utf-8")
+        return JSON.parse(raw) as Record<string, UserPrefs>
+    } catch (err) {
+        return {}
+    }
+}
+
+const writePrefs = async (prefs: Record<string, UserPrefs>) => {
+    await fs.mkdir(path.dirname(prefsPath), { recursive: true })
+    await fs.writeFile(prefsPath, JSON.stringify(prefs, null, 2), "utf-8")
+}
+
+const getUserPrefs = async (username: string): Promise<UserPrefs> => {
+    const prefs = await readPrefs()
+    return prefs[username] ?? {}
+}
+
+const setUserPrefs = async (username: string, updates: UserPrefs) => {
+    const prefs = await readPrefs()
+    const current = prefs[username] ?? {}
+    prefs[username] = { ...current, ...updates, updatedAt: Date.now() }
+    await writePrefs(prefs)
+}
 
 app.use(cors({
     origin: "*",
@@ -34,6 +68,39 @@ app.use(express.json())
 
 app.get("/ping", (_req: Request, res: Response) => {
     res.json({ message: "pong" })
+})
+
+app.get("/prefs/:username", async (req, res) => {
+    try {
+        const prefs = await getUserPrefs(req.params.username)
+        return res.json({ user: req.params.username, ...prefs })
+    } catch (err) {
+        return res.status(500).json({ error: "Failed to load preferences" })
+    }
+})
+
+app.post("/prefs", async (req, res) => {
+    const token = req.headers.authorization?.replace("Bearer ", "")
+    if (!token) {
+        return res.status(401).json({ error: "Missing user token" })
+    }
+
+    try {
+        const userRes = await axios.get("https://api.github.com/user", {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+        const username = userRes.data.login
+        const { year, color } = req.body ?? {}
+
+        const updates: UserPrefs = {}
+        if (typeof year === "number" && Number.isFinite(year)) updates.year = year
+        if (typeof color === "string" && /^#([0-9a-fA-F]{6})$/.test(color)) updates.color = color
+
+        await setUserPrefs(username, updates)
+        return res.json({ user: username, ...updates })
+    } catch (err) {
+        return res.status(500).json({ error: "Failed to save preferences" })
+    }
 })
 
 app.get("/commits", async (req, res) => {
@@ -93,7 +160,9 @@ app.get("/commits", async (req, res) => {
     }
 
     
-    const year = Number(req.query.year) || new Date().getFullYear()
+    const prefs = await getUserPrefs(username)
+    const year = Number(req.query.year) || prefs.year || new Date().getFullYear()
+    const color = typeof prefs.color === "string" ? prefs.color : undefined
     const cachedKey = `${username}-${year}`
     const cached = cache.get(cachedKey)
     const fresh = req.query.fresh === "1" || req.query.fresh === "true"
@@ -104,6 +173,8 @@ app.get("/commits", async (req, res) => {
             days: cached.days,
             allYears: cached.allYears ?? [],
             user: username,
+            year,
+            color,
             calculatedAt: new Date(cached.calculatedAt).toISOString()
         })
     }
@@ -170,6 +241,8 @@ app.get("/commits", async (req, res) => {
             allYears,
             cached: false,
             user: username,
+            year,
+            color,
             calculatedAt: new Date(cache.get(cachedKey)!.calculatedAt).toISOString()
         })
     } catch (err) {
@@ -220,7 +293,9 @@ app.post("/github/token", async (req, res) => {
 
 app.get("/embed/:username", async (req, res) => {
     const username = req.params.username;
-    const year = Number(req.query.year) || new Date().getFullYear()
+    const prefs = await getUserPrefs(username)
+    const year = Number(req.query.year) || prefs.year || new Date().getFullYear()
+    const color = typeof prefs.color === "string" ? prefs.color : undefined
     const cachedKey = `${username}-${year}`
     const cached = cache.get(cachedKey)
     if (cached && Date.now() - cached.calculatedAt < ONE_HOUR) {
@@ -230,6 +305,8 @@ app.get("/embed/:username", async (req, res) => {
             days: cached.days,
             cached: true,
             user: username,
+            year,
+            color,
             calculatedAt: new Date(cached.calculatedAt).toISOString()
         });
     }
@@ -288,6 +365,8 @@ app.get("/embed/:username", async (req, res) => {
             days,
             cached: false,
             user: username,
+            year,
+            color,
             calculatedAt: new Date(cache.get(cachedKey)!.calculatedAt).toISOString()
         });
     } catch (err) {
